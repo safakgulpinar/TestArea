@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -18,9 +19,9 @@ namespace _Project.Scripts._FlipMechanic.Scripts.CoinSystem
 
             [Tooltip("Flip için uygulanacak maksimum dikey güç.")]
             [Range(1f, 20f)] public float MaxFlipForce = 12f;
-
-            [Tooltip("Uygulanan güce oranla rotasyon hızını belirleyen çarpan.")]
-            [Range(1f, 20f)] public float RotationSpeedMultiplier = 10f;
+            
+            [Tooltip("Dönüş hızı çarpanı. Dönüş kuvvetini artırmak için kullanılır.")]
+            [Range(1f, 20f)] public float RotationForceMultiplier = 1f;
         }
         
         #endregion
@@ -30,22 +31,34 @@ namespace _Project.Scripts._FlipMechanic.Scripts.CoinSystem
         private enum CoinState
         {
             Ready,
-            Flipping
+            Flipping,
+            Preparing
         }
         
         #endregion
 
         #region Events
 
+        /// <summary>
+        /// Coin başarılı bir şekilde fırlatıldığında tetiklenir.
+        /// </summary>
         public event Action OnCoinFlipped;
+        
+        /// <summary>
+        /// Coin yere düşüp stabil hale geldiğinde tetiklenir.
+        /// </summary>
         public event Action OnCoinLanded;
+
+        /// <summary>
+        /// Coin yere düştükten 1 saniye sonra, hazırlanma durumuna geçtiğinde tetiklenir.
+        /// </summary>
+        public event Action OnCoinPrepare;
 
         #endregion
 
         #region Serialized Fields
         
         [SerializeField] private FlipSettings settings;
-
         [SerializeField] private LayerMask groundLayer;
 
         #endregion
@@ -55,10 +68,11 @@ namespace _Project.Scripts._FlipMechanic.Scripts.CoinSystem
         private Rigidbody _rb;
         private Transform _transform;
         private CoinState _currentState = CoinState.Ready;
-        private bool _wobbleAppliedThisFlip = false;
         private Vector3 _initialPosition;
         private Quaternion _initialRotation;
         
+        // Coroutine içinde GC (çöp toplama) oluşturmamak için bekleme objesini cache'liyoruz.
+        private WaitForSeconds _oneSecondWait;
         private const float GROUND_CHECK_DISTANCE = 1f;
 
         #endregion
@@ -67,15 +81,21 @@ namespace _Project.Scripts._FlipMechanic.Scripts.CoinSystem
 
         private void Awake()
         {
-            _rb = GetComponent<Rigidbody>();
+            _rb = GetComponent(typeof(Rigidbody)) as Rigidbody;
             _transform = transform;
+            
+            // OPTIMIZASYON: Varsayılan dönüş hızı limitini artırarak
+            // RotationSpeedMultiplier'ın etkili olmasını sağlıyoruz.
+            _rb.maxAngularVelocity = 10;
+            
+            // OPTIMIZASYON: WaitForSeconds objesini bir kere oluşturuyoruz.
+            _oneSecondWait = new WaitForSeconds(1f);
         }
 
         private void Start()
         {
             _initialPosition = _transform.position;
             _initialRotation = _transform.rotation;
-            
             _rb.isKinematic = true;
         }
 
@@ -89,8 +109,6 @@ namespace _Project.Scripts._FlipMechanic.Scripts.CoinSystem
 
         private void FixedUpdate()
         {
-            // FixedUpdate, fizik ile ilgili tüm kontroller için en doğru yerdir.
-            // Sadece coin havadayken çalışarak işlemciden tasarruf eder.
             if (_currentState == CoinState.Flipping)
             {
                 CheckForLanding();
@@ -101,11 +119,9 @@ namespace _Project.Scripts._FlipMechanic.Scripts.CoinSystem
 
         #region Public Methods
 
-        /// <summary>
-        /// Coini başlangıç pozisyonuna sıfırlamak için kullanılabilecek genel bir metot.
-        /// </summary>
         public void ResetCoin()
         {
+            StopAllCoroutines();
             _currentState = CoinState.Ready;
             _rb.isKinematic = true;
             _transform.SetPositionAndRotation(_initialPosition, _initialRotation);
@@ -117,48 +133,58 @@ namespace _Project.Scripts._FlipMechanic.Scripts.CoinSystem
 
         #region Internal Logic
 
-        /// <summary>
-        /// Coin fırlatma işlemini başlatır ve ilgili event'i tetikler.
-        /// </summary>
         private void FlipCoin()
         {
             _currentState = CoinState.Flipping;
-            _wobbleAppliedThisFlip = false;
             _rb.isKinematic = false;
             
             float randomFlipForce = Random.Range(settings.MinFlipForce, settings.MaxFlipForce);
             _rb.AddForce(Vector3.up * randomFlipForce, ForceMode.Impulse);
 
             Vector3 randomTorqueDirection = new Vector3(Random.Range(-1f, 1f), 0, Random.Range(-1f, 1f)).normalized;
-            float torqueAmount = randomFlipForce * settings.RotationSpeedMultiplier;
-            _rb.AddTorque(randomTorqueDirection * torqueAmount, ForceMode.Impulse);
+            _rb.AddTorque(randomTorqueDirection * (randomFlipForce * settings.RotationForceMultiplier), ForceMode.Impulse);
 
             OnCoinFlipped?.Invoke();
         }
 
-        /// <summary>
-        /// Coinin yere düşüp durduğunu, Rigidbody'nin uyku durumuna bakarak kontrol eder.
-        /// </summary>
         private void CheckForLanding()
         {
             if (_rb.IsSleeping())
             {
-                // Ekstra kontrol: Uyuduğu yer gerçekten zemin mi?
                 if (Physics.Raycast(_transform.position, Vector3.down, GROUND_CHECK_DISTANCE, groundLayer))
                 {
-                    StabilizeCoin();
+                    // Aynı frame içinde birden çok kez çağrılmasını önlemek için state kontrolü
+                    if (_currentState == CoinState.Flipping)
+                    {
+                        StabilizeCoin();
+                    }
                 }
             }
         }
 
         private void StabilizeCoin()
         {
+            // Coroutine başlamadan önce durumu değiştirerek tekrar tetiklenmesini engelliyoruz.
+            _currentState = CoinState.Preparing;
             _rb.isKinematic = true;
-            _currentState = CoinState.Ready;
-            Debug.Log("Coin Yere Düştü ve Stabilize Oldu! Yeniden fırlatılabilir.");
+            StartCoroutine(PostLandingSequence());
+        }
 
-            // Event'i tetikle.
+        private IEnumerator PostLandingSequence()
+        {
             OnCoinLanded?.Invoke();
+            
+            // Cache'lenmiş bekleme objesini kullanıyoruz.
+            yield return _oneSecondWait;
+            
+            // Durum zaten Preparing olarak ayarlandığı için tekrar ayarlamaya gerek yok.
+            OnCoinPrepare?.Invoke();
+            Debug.Log("Coin hazırlanıyor...");
+            
+            yield return _oneSecondWait;
+            
+            _currentState = CoinState.Ready;
+            Debug.Log("Coin yeniden fırlatılmaya hazır.");
         }
 
         #endregion

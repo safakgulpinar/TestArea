@@ -7,37 +7,43 @@ namespace _Project.Scripts.Gameplay.Managers.GameManager
 {
     public class GameManager : MonoBehaviour, IGameManager
     {
-        // DI: Sahne yüklenince Installer’dan inject edilir
-        [Inject] private ILevelManager _level;
-        [Inject] private IUIManager _ui;
+        [Inject] private ILevelManager _levelManager;
+        [Inject] private IUIManager _uiManager;
         
         [SerializeField] private GameManagerSettingSO gameManagerSettingSO;
 
-        // İstersen Start’ta ilk ekranı aç
         private void Start()
         {
-            _ui.Show(UIScreen.MainMenu);
+            _uiManager.Show(UIScreen.MainMenu);
+        }
+
+        private void Update()
+        {
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                _levelManager.LoadCurrent();
+            }
         }
 
         public void StartGame()
         {
-            _level.LoadCurrent();
-            _ui.Show(UIScreen.Gameplay);
+            _levelManager.LoadCurrent();
+            _uiManager.Show(UIScreen.Gameplay);
         }
 
         public void EndGameWin()
         {
-            _ui.Show(UIScreen.LevelEndWin);
+            _uiManager.Show(UIScreen.LevelEndWin);
         }
 
         public void EndGameLose()
         {
-            _ui.Show(UIScreen.LevelEndLose);
+            _uiManager.Show(UIScreen.LevelEndLose);
         }
 
         public void TogglePause(bool isPaused)
         {
-            _ui.Show(isPaused ? UIScreen.Pause : UIScreen.Gameplay);
+            _uiManager.Show(isPaused ? UIScreen.Pause : UIScreen.Gameplay);
         }
     }
 }

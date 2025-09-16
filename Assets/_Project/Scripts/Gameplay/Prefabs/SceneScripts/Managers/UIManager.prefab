@@ -49,3 +49,4 @@ MonoBehaviour:
   Pause: {fileID: 0}
   LevelEndWin: {fileID: 0}
   LevelEndLose: {fileID: 0}
+  uIManagerSettingSO: {fileID: 11400000, guid: 6eb116e912d7a41eca061982954c88d8, type: 2}

@@ -11,6 +11,7 @@ namespace _Project.Scripts.Gameplay.Managers.LevelManager
         public void LoadCurrent()
         {
             //var currentLevel = CurrentIndex;
+            Debug.Log($"CURRENT LEVEL LOADED");
         }
 
         public void LoadNext()

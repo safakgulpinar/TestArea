@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7617973453914503710}
   - component: {fileID: 5455952628303093542}
-  - component: {fileID: 8444658321247873259}
+  - component: {fileID: -3363551072510511940}
   m_Layer: 0
   m_Name: ProjectContext
   m_TagString: Untagged
@@ -47,7 +47,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _scriptableObjectInstallers: []
   _monoInstallers:
-  - {fileID: 8444658321247873259}
+  - {fileID: -3363551072510511940}
   _installerPrefabs: []
   _findSiblingMonoInstallers: 0
   _parentNewObjectsUnderContext: 1
@@ -64,7 +64,7 @@ MonoBehaviour:
       _missingHandlerDefaultResponse: 2
       _requireStrictUnsubscribe: 0
       _defaultAsyncTickPriority: 1
---- !u!114 &8444658321247873259
+--- !u!114 &-3363551072510511940
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -73,6 +73,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 4534346464585025140}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d9dd3f99c89eb45ac89d41db90ce299f, type: 3}
+  m_Script: {fileID: 11500000, guid: d37a01d1d3c4c48bea3081820f6067cb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  SoundManagerSettingSO: {fileID: 11400000, guid: 179ba8f22f7d04ea396dfb43b970e20a, type: 2}
+  HapticManagerSettingSO: {fileID: 11400000, guid: 9c78ba910c49e475dbd4ab5bca7b36dd, type: 2}

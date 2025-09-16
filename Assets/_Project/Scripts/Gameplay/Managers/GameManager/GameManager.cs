@@ -10,7 +10,8 @@ namespace _Project.Scripts.Gameplay.Managers.GameManager
         // DI: Sahne yüklenince Installer’dan inject edilir
         [Inject] private ILevelManager _level;
         [Inject] private IUIManager _ui;
-        [Inject(Optional = true)] private GameManagerSettingSO _cfg;
+        
+        [SerializeField] private GameManagerSettingSO gameManagerSettingSO;
 
         // İstersen Start’ta ilk ekranı aç
         private void Start()

@@ -4,14 +4,9 @@ namespace _Project.Scripts.Gameplay.Managers.LevelManager
 {
     public class LevelManager : MonoBehaviour, ILevelManager
     {
-        private readonly LevelManagerSettingSO _settings;
         public int CurrentIndex { get; private set; }
-
-        public LevelManager(LevelManagerSettingSO settings)
-        {
-            _settings = settings;
-            CurrentIndex = 0;
-        }
+        
+        [SerializeField] private LevelManagerSettingSO levelManagerSettingSO;
 
         public void LoadCurrent()
         {

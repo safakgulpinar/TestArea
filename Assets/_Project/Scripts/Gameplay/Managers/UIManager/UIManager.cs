@@ -1,5 +1,4 @@
 using UnityEngine;
-using Zenject;
 
 namespace _Project.Scripts.Gameplay.Managers.UIManager
 {
@@ -11,8 +10,8 @@ namespace _Project.Scripts.Gameplay.Managers.UIManager
         public GameObject Pause;
         public GameObject LevelEndWin;
         public GameObject LevelEndLose;
-
-        [Inject(Optional = true)] private UIManagerSettingSO _settings;
+        
+        [SerializeField] private UIManagerSettingSO uIManagerSettingSO;
 
         public void Show(UIScreen screen)
         {
@@ -21,8 +20,6 @@ namespace _Project.Scripts.Gameplay.Managers.UIManager
             if (Pause)        Pause.SetActive(screen == UIScreen.Pause);
             if (LevelEndWin)  LevelEndWin.SetActive(screen == UIScreen.LevelEndWin);
             if (LevelEndLose) LevelEndLose.SetActive(screen == UIScreen.LevelEndLose);
-
-            // (Opsiyonel) _settings.TransitionDuration ile fade/anim ekleyebilirsin
         }
 
         public void Show(string screenKey)
